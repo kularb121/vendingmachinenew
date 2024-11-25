@@ -7,14 +7,16 @@
 class CoinAcceptor {
 private:
     int pinCoin;
-    volatile int count;
+
     unsigned long lastInterruptTime;
-    const unsigned long debounceDelay;
+    const unsigned long debounceDelay = 50;
     bool state;
+    int coinDiscard = 2; // New variable to hold the number of coins to discard
     int regCount; // New variable to hold the EEPROM address for count
 
 public:
     // Constructor
+    volatile int count;
     CoinAcceptor(int coinPin, unsigned long debounceDelay = 20, int regCount = 221) 
         : pinCoin(coinPin), count(0), lastInterruptTime(0), debounceDelay(debounceDelay), state(false) {
         pinMode(pinCoin, INPUT);
