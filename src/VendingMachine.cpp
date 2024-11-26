@@ -1,6 +1,7 @@
 #include "VendingMachine.h"
 #include "Mechanics.h"
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 
 VendingMachine::VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin) {
     setPinLed(ledPin);
@@ -9,12 +10,12 @@ VendingMachine::VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin
     setPinPump(pumpPin);
     buttonPressed = false;
     buttonConfigurePressed = false;
-    startPrice = 0.0; // Initialize startPrice
+    startPrice = 5.0; // Initialize startPrice
 
     // Read timePerBaht from EEPROM
     timePerBaht = EEPROM.read(timePerBahtAddress);
     if (timePerBaht == 0 || timePerBaht == 255) {
-        timePerBaht = 16; // Set default value
+        timePerBaht = 16; // Set default value, in 100ms
         EEPROM.write(timePerBahtAddress, timePerBaht);
         EEPROM.commit();
     }
@@ -25,12 +26,14 @@ void VendingMachine::handleButtonPress(volatile bool &buttonPressed, int pinInpu
         if(pinInput == pinButton)
             checkAndTriggerOperation(coinCount);
         //checkButtonAndBlink(pinButton, pinLed);
+        Serial.println("Button pressed");
         buttonPressed = false;
     }
 }
 
 void VendingMachine::handleAllButtonPresses(volatile int &coinCount) 
 {
+    setLedState(coinCount);
     if (buttonPressed) {
         handleButtonPress(buttonPressed, pinButton, pinLed, coinCount);
     }
@@ -43,15 +46,33 @@ void VendingMachine::handleAllButtonPresses(volatile int &coinCount)
 void VendingMachine::checkAndTriggerOperation(volatile int &coinCount) {
     if (coinCount >= startPrice) {
         if (buttonPressed) {
-            unsigned long operationTime = timePerBaht * coinCount;
+            unsigned long operationTime = (timePerBaht * 100) * coinCount;
+            unsigned long startTime = millis();
             digitalWrite(pinPump, HIGH); // Trigger the pump
-            delay(operationTime); // Keep the pump on for the calculated time
+
+            while (millis() - startTime < operationTime) {
+                digitalWrite(pinLed, HIGH);
+                delay(100); // Short delay of 100 ms
+                digitalWrite(pinLed, LOW);
+                delay(100); // Short delay of 100 ms
+                esp_task_wdt_reset(); // Reset the watchdog timer
+            }
+
             digitalWrite(pinPump, LOW); // Turn off the pump
             buttonPressed = false; // Reset the button press state
             coinCount = 0; // Reset the coin count
         }
     }
 }
+
+void VendingMachine::setLedState(volatile int &coinCount) {
+    if (coinCount >= startPrice) {
+        digitalWrite(pinLed, HIGH);
+    }
+    else
+        digitalWrite(pinLed, LOW);    
+}
+
 
 void VendingMachine::checkButtonAndBlink(int pinInput, int pinOutput) {
     const int debounceDelay = 50; // milliseconds
@@ -96,7 +117,7 @@ void VendingMachine::setPinPump(int pumpPin) {
 
 void VendingMachine::setButtonPressed(bool state) {
     unsigned long currentTime = millis();
-    if (currentTime - lastButtonPressTime > debounceDelay) {
+    if (currentTime - lastButtonPressTime > debounceDelay * 2) {
         buttonPressed = state;
         lastButtonPressTime = currentTime;
     }
@@ -104,7 +125,8 @@ void VendingMachine::setButtonPressed(bool state) {
 
 void VendingMachine::setButtonConfigurePressed(bool state) {
     unsigned long currentTime = millis();
-    if (currentTime - lastButtonConfigurePressTime > debounceDelay) {
+    
+    if (currentTime - lastButtonConfigurePressTime > debounceDelay * 2) {
         buttonConfigurePressed = state;
         lastButtonConfigurePressTime = currentTime;
     }

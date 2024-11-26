@@ -13,7 +13,8 @@ private:
     bool state;
     int coinDiscard = 2; // New variable to hold the number of coins to discard
     int regCount; // New variable to hold the EEPROM address for count
-
+    unsigned long lastCoinTime; // Timestamp of the last coin insertion
+    
 public:
     // Constructor
     volatile int count;
@@ -65,12 +66,21 @@ public:
 
     // Method to manually increment the count (e.g., called from loop)
     void incrementCount() {
+       
         unsigned long currentTime = millis();
         if (currentTime - lastInterruptTime > debounceDelay) {
             count++;
             lastInterruptTime = currentTime;
-            EEPROM.write(regCount, count); // Write the count value to EEPROM
-            EEPROM.commit(); // Ensure the value is written to EEPROM
+        //     // EEPROM.write(regCount, count); // Write the count value to EEPROM
+        //     // EEPROM.commit(); // Ensure the value is written to EEPROM
+        }
+    }
+
+        // Method to check and reset the count if more than five minutes have passed
+    void checkAndResetCount() {
+        unsigned long currentTime = millis();
+        if (currentTime - lastCoinTime > 300000) { // 300000 ms = 5 minutes
+            resetCount();
         }
     }
 };

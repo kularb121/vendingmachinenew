@@ -12,6 +12,7 @@ public:
     void handleButtonPress(volatile bool &buttonPressed, int pinInput, int pinOutput, volatile int &coinCount);
     void handleAllButtonPresses(volatile int &coinCount);
     void checkAndTriggerOperation(volatile int &coinCount);
+    void setLedState(volatile int &coinCount);
 
     // Setter functions
     void setPinLed(int ledPin);
