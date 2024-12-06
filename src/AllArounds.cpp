@@ -449,6 +449,25 @@ void AllArounds::keepAlive(WiFiManager &wm, PubSubClient &mqttClient, WiFiClient
   checkFirmwareUpdate(wifiClient, wm);
 }
 
+void AllArounds::keepAliveReport(WiFiManager &wm, PubSubClient &mqttClient, WiFiClient &wifiClient, int detergentCoins, int softenerCoins, int resetCoins)
+{
+  keepAlive(wm, mqttClient, wifiClient);
+  if(detergentCoins > 0)
+  {
+    publishMQTT(mqttClient, "coins", "detergent", String(detergentCoins));
+  }
+
+  if(softenerCoins > 0)
+  {
+    publishMQTT(mqttClient, "coins", "softener", String(softenerCoins));
+  }
+  
+  if(resetCoins > 0)
+  {
+    publishMQTT(mqttClient, "coins", "reset", String(resetCoins));
+  }
+}
+
 void AllArounds::reportRSSI(WiFiManager &wm, PubSubClient &mqttClient)
 {
   reconnectWifi(wm);

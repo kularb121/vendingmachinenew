@@ -211,7 +211,8 @@ class AllArounds
       
     //MQTT operations
       void keepAlive(WiFiManager &wm, PubSubClient &mqttClient, WiFiClient &wifiClient);
-              
+      void keepAliveReport(WiFiManager &wm, PubSubClient &mqttClient, WiFiClient &wifiClient, int detergentCoins, int softenerCoins, int resetCoins);
+
     //Initial State
                              
     //MQTT-related

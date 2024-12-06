@@ -9,7 +9,7 @@ public:
     VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin);
     
     void checkButtonAndBlink(int pinInput, int pinOutput);
-    int handleButtonPress(volatile bool &buttonPressed, int pinInput, int pinOutput, volatile int &coinCount);
+    int handleButtonPress(int pinInput, int pinOutput, volatile int &coinCount);
     int handleAllButtonPresses(volatile int &coinCount);
     void checkAndTriggerOperation(volatile int &coinCount);
     void setLedState(volatile int &coinCount);

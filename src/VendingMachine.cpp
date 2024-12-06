@@ -21,47 +21,37 @@ VendingMachine::VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin
     }
 }
 
-int VendingMachine::handleButtonPress(volatile bool &buttonPressed, int pinInput, int pinOutput, volatile int &coinCount) {
-    unsigned long currentTime = millis();
-    volatile unsigned long *lastPressTime;
-
+int VendingMachine::handleButtonPress(int pinInput, int pinOutput, volatile int &coinCount) 
+{
     // Determine which button is being pressed and use the appropriate debounce timing variable
-    if (pinInput == pinButton) {
-        lastPressTime = &lastButtonPressTime;
-    } else if (pinInput == pinButtonConfigure) {
-        lastPressTime = &lastButtonConfigurePressTime;
-    } else {
-        // Handle other buttons if necessary
-        return 0;
-    }
-
-    if (buttonPressed) {
-        if (currentTime - *lastPressTime > debounceDelay * 4) {
-            Serial.println("Button pressed");
-            if (pinInput == pinButton) {
-                int tempCount = coinCount;
-                checkAndTriggerOperation(coinCount);
-                return tempCount;
+    if (pinInput == pinButton) 
+    {
+        if (digitalRead(pinInput) == HIGH) {
+            delay(100);
+            if (digitalRead(pinInput) == HIGH) {
+                delay(100);
+                if(digitalRead(pinInput) == HIGH) {
+                    Serial.println("Button pressed");
+                    int tempCount = coinCount;
+                    checkAndTriggerOperation(coinCount);
+                    return tempCount;
+                }
             }
-            buttonPressed = false;
-            *lastPressTime = currentTime; // Update the last button press time
-            return 0;
         }
-        return 0;
     }
-    else 
-        return 0;
+    return 0;
 }
 
 int VendingMachine::handleAllButtonPresses(volatile int &coinCount) 
 {
     setLedState(coinCount);
-    if (buttonPressed) {
-        return handleButtonPress(buttonPressed, pinButton, pinLed, coinCount);
-    }
-
-    if (buttonConfigurePressed) {
-        return handleButtonPress(buttonConfigurePressed, pinButtonConfigure, pinLed, coinCount);
+    if(digitalRead(pinButton) == HIGH)
+    {
+        delay(20);
+        if(digitalRead(pinButton) == HIGH)
+        {
+            return handleButtonPress(pinButton, pinLed, coinCount);
+        }
     }
 
     return 0;
@@ -69,23 +59,21 @@ int VendingMachine::handleAllButtonPresses(volatile int &coinCount)
 
 void VendingMachine::checkAndTriggerOperation(volatile int &coinCount) {
     if (coinCount >= startPrice) {
-        if (buttonPressed) {
-            unsigned long operationTime = (timePerBaht * 100) * coinCount;
-            unsigned long startTime = millis();
-            digitalWrite(pinPump, HIGH); // Trigger the pump
+        unsigned long operationTime = (timePerBaht * 100) * coinCount;
+        unsigned long startTime = millis();
+        digitalWrite(pinPump, HIGH); // Trigger the pump
 
-            while (millis() - startTime < operationTime) {
-                digitalWrite(pinLed, HIGH);
-                delay(100); // Short delay of 100 ms
-                digitalWrite(pinLed, LOW);
-                delay(100); // Short delay of 100 ms
-                esp_task_wdt_reset(); // Reset the watchdog timer
-            }
-
-            digitalWrite(pinPump, LOW); // Turn off the pump
-            buttonPressed = false; // Reset the button press state
-            coinCount = 0; // Reset the coin count
+        while (millis() - startTime < operationTime) {
+            digitalWrite(pinLed, HIGH);
+            delay(100); // Short delay of 100 ms
+            digitalWrite(pinLed, LOW);
+            delay(100); // Short delay of 100 ms
+            esp_task_wdt_reset(); // Reset the watchdog timer
         }
+
+        digitalWrite(pinPump, LOW); // Turn off the pump
+        buttonPressed = false; // Reset the button press state
+        coinCount = 0; // Reset the coin count
     }
 }
 

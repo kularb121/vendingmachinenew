@@ -51,21 +51,21 @@ void IRAM_ATTR coinInserted() {
     coinAcceptor.incrementCount();
 }
 
-void IRAM_ATTR detergentButtonISR() {
-    vm_detergent.setButtonPressed(true);
-}
+// void IRAM_ATTR detergentButtonISR() {
+//     vm_detergent.setButtonPressed(true);
+// }
 
-void IRAM_ATTR softenerButtonISR() {
-    vm_softener.setButtonPressed(true);
-}
+// void IRAM_ATTR softenerButtonISR() {
+//     vm_softener.setButtonPressed(true);
+// }
 
-void IRAM_ATTR detergentButtonConfigureISR() {
-    vm_detergent.setButtonConfigurePressed(true);
-}
+// void IRAM_ATTR detergentButtonConfigureISR() {
+//     vm_detergent.setButtonConfigurePressed(true);
+// }
 
-void IRAM_ATTR softenerButtonConfigureISR() {
-    vm_softener.setButtonConfigurePressed(true);
-}
+// void IRAM_ATTR softenerButtonConfigureISR() {
+//     vm_softener.setButtonConfigurePressed(true);
+// }
 
 
 void WiFiTask(void *pvParameters) {
@@ -105,10 +105,10 @@ void setup()
 
   mechanics.updateCoinDisplay(coinAcceptor.getCount(), true);
   attachInterrupt(digitalPinToInterrupt(coinAcceptor.getPinCoin()), coinInserted, RISING);
-  attachInterrupt(digitalPinToInterrupt(vm_detergent.getPinButton()), detergentButtonISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(vm_softener.getPinButton()), softenerButtonISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(vm_detergent.getPinButtonConfigure()), detergentButtonConfigureISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(vm_softener.getPinButtonConfigure()), softenerButtonConfigureISR, RISING);
+//   attachInterrupt(digitalPinToInterrupt(vm_detergent.getPinButton()), detergentButtonISR, RISING);
+//   attachInterrupt(digitalPinToInterrupt(vm_softener.getPinButton()), softenerButtonISR, RISING);
+//   attachInterrupt(digitalPinToInterrupt(vm_detergent.getPinButtonConfigure()), detergentButtonConfigureISR, RISING);
+//   attachInterrupt(digitalPinToInterrupt(vm_softener.getPinButtonConfigure()), softenerButtonConfigureISR, RISING);
 
   // Initialize the watchdog timer
   esp_task_wdt_init(10, true); // Set timeout to 10 seconds
@@ -135,22 +135,6 @@ void loop()
   mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
   int detergentCoins = vm_detergent.handleAllButtonPresses(coinAcceptor.count);
   int softenerCoins = vm_softener.handleAllButtonPresses(coinAcceptor.count);
-//   vm_detergent.handleAllButtonPresses(coinAcceptor.count);
-//   vm_softener.handleAllButtonPresses(coinAcceptor.count);
   int resetCoins = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
-  AAS.keepAlive(wm, mqttClient, wifiClient);
-  if(detergentCoins > 0)
-  {
-    AAS.publishMQTT(mqttClient, "coins", "detergent", String(detergentCoins));
-  }
-
-  if(softenerCoins > 0)
-  {
-    AAS.publishMQTT(mqttClient, "coins", "softener", String(softenerCoins));
-  }
-
-  if(resetCoins > 0)
-  {
-    AAS.publishMQTT(mqttClient, "coins", "reset", String(resetCoins));
-  }
+  AAS.keepAliveReport(wm, mqttClient, wifiClient, detergentCoins, softenerCoins, resetCoins);  
 }
