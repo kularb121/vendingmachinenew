@@ -9,8 +9,8 @@ public:
     VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin);
     
     void checkButtonAndBlink(int pinInput, int pinOutput);
-    void handleButtonPress(volatile bool &buttonPressed, int pinInput, int pinOutput, volatile int &coinCount);
-    void handleAllButtonPresses(volatile int &coinCount);
+    int handleButtonPress(volatile bool &buttonPressed, int pinInput, int pinOutput, volatile int &coinCount);
+    int handleAllButtonPresses(volatile int &coinCount);
     void checkAndTriggerOperation(volatile int &coinCount);
     void setLedState(volatile int &coinCount);
 
@@ -47,6 +47,9 @@ private:
     float startPrice; // New variable to hold the start price
     unsigned long timePerBaht;
     const int timePerBahtAddress = 311; // EEPROM address for timePerBaht
+
+
+
 };
 
 #endif // VENDINGMACHINE_H

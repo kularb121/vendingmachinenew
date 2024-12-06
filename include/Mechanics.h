@@ -17,6 +17,7 @@ private:
     unsigned long previousMillis = 0;
     const long interval = 1000; // Interval to update the display
     int pinRouter = 14; // Pin to control the router
+    int lastDisplayedCount = -1; // Variable to store the last displayed count
 };
 
 #endif // MECHANICS_H

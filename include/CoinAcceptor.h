@@ -9,7 +9,7 @@ private:
     int pinCoin;
 
     unsigned long lastInterruptTime;
-    const unsigned long debounceDelay = 50;
+    const unsigned long debounceDelay = 60;
     bool state;
     int coinDiscard = 2; // New variable to hold the number of coins to discard
     int regCount; // New variable to hold the EEPROM address for count
@@ -77,10 +77,17 @@ public:
     }
 
         // Method to check and reset the count if more than five minutes have passed
-    void checkAndResetCount() {
+    int checkAndResetCount() {
+
         unsigned long currentTime = millis();
         if (currentTime - lastCoinTime > 300000) { // 300000 ms = 5 minutes
+            int coinReset = getCount();
             resetCount();
+            lastCoinTime = millis();
+            return coinReset;
+        }
+        else {
+            return 0;
         }
     }
 };

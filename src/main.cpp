@@ -13,11 +13,11 @@
 #include <EEPROM.h>
 #include <Math.h>
 #include <HTTPUpdate.h>
-// #include "AllArounds.h"
+#include "AllArounds.h"
 ///////////////////////////////////////////////////////////////////////////////
 
-//AllArounds AAS(25, 12, "vendingmachine_G101", "G101", "AAS", false, false);
-//Ticker ticker, runTimeTick;
+AllArounds AAS(25, 12, "vendingmachine_G101", "G101", "AAS", false, false);
+Ticker ticker, runTimeTick;
 WiFiClient wifiClient, wifiClientFirmware;
 WiFiManager wm;
 PubSubClient mqttClient(wifiClient);
@@ -35,16 +35,16 @@ CoinAcceptor coinAcceptor(35, 20, 221); // Initialize CoinAcceptor with pin 25
 VendingMachine vm_detergent(25, 33, 36, 12); //(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin)
 VendingMachine vm_softener(32, 39, 34, 13);
 
-//void tick()             {  digitalWrite(AAS.pinReset, !digitalRead(AAS.pinReset)); }
-//void ISRresetRunTime()  {  AAS.resetRunTime();   }
+void tick()             {  digitalWrite(AAS.pinReset, !digitalRead(AAS.pinReset)); }
+void ISRresetRunTime()  {  AAS.resetRunTime();   }
 
-// void callback(char* topic, byte* payload, unsigned int length)  { AAS.callbackMqtt(topic, payload, length, mqttClient);}
+void callback(char* topic, byte* payload, unsigned int length)  { AAS.callbackMqtt(topic, payload, length, mqttClient);}
 
-// void attachTicker ()
-// {
-//   ticker.attach(0.2, tick);
-//   runTimeTick.attach(60*60, ISRresetRunTime);
-// }
+void attachTicker ()
+{
+  ticker.attach(0.2, tick);
+  runTimeTick.attach(60*60, ISRresetRunTime);
+}
 
 void IRAM_ATTR coinInserted() {
     // Serial.println("Coin inserted");
@@ -67,56 +67,41 @@ void IRAM_ATTR softenerButtonConfigureISR() {
     vm_softener.setButtonConfigurePressed(true);
 }
 
-// void WiFiTask(void *pvParameters) {
-//     while (true) {
-//         AAS.keepAlive(wm, mqttClient, wifiClientFirmware);
-//         vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
-//         esp_task_wdt_reset(); // Reset the watchdog timer
-//     }
-// }
 
-// void WiFiTask(void *pvParameters) {
-//     while (true) {
-//         if (WiFi.status() != WL_CONNECTED) {
-//             Serial.println("Wi-Fi disconnected, reconnecting...");
-//             WiFi.begin(ssid, password);
-//             unsigned long startAttemptTime = millis();
+void WiFiTask(void *pvParameters) {
+    int retryCount = 0;
+    const int maxRetries = 5;
 
-//             while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 12000) { // 12 seconds timeout
-//                 vTaskDelay(500 / portTICK_PERIOD_MS); // Use vTaskDelay instead of delay
-//                 Serial.print(".");
-//                 esp_task_wdt_reset(); // Reset the watchdog timer
-//             }
+    while (true) {
+        if (WiFi.status() != WL_CONNECTED) {
+            Serial.println("Wi-Fi disconnected, reconnecting...");
+            if (!wm.autoConnect((AAS.apName).c_str(), (AAS.apPass).c_str())) {
+                Serial.println("Failed to connect and hit timeout");
+                retryCount++;
+                if (retryCount >= maxRetries) {
+                    Serial.println("Max retries reached, continuing without Wi-Fi");
+                    retryCount = 0; // Reset retry count
+                }
+            } else {
+                Serial.println("Connected to Wi-Fi");
+                retryCount = 0; // Reset retry count on successful connection
+            }
+        }
 
-//             if (WiFi.status() == WL_CONNECTED) {
-//                 Serial.println("Reconnected to Wi-Fi");
-//             } else {
-//                 Serial.println("Failed to reconnect to Wi-Fi within 12 seconds");
-//             }
-//         }
-
-//         //AAS.keepAlive(wm, mqttClient, wifiClientFirmware);
-//         vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
-//         esp_task_wdt_reset(); // Reset the watchdog timer
-//     }
-// }
+        AAS.keepAlive(wm, mqttClient, wifiClientFirmware);
+        vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
+        esp_task_wdt_reset(); // Reset the watchdog timer
+    }
+}
 
 void setup() 
 {
   // Initialize pins
   mechanics.init(); // Initialize the LCD
 
-//   AAS.init(3, 10, "AAS IoT Manager", "AASIoT", "AASIoT12345", ticker, wm, wifiClientFirmware);
-//   AAS.initMqtt(mqttClient, wm);
-//   mqttClient.setCallback(callback);
-
-//   WiFi.begin(ssid, password);
-//   Serial.print("Connecting to Wi-Fi");
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(500);
-//     Serial.print(".");
-//   }
-//   Serial.println("Connected to Wi-Fi");
+  AAS.init(3, 10, "AAS IoT Manager", "AASIoT", "AASIoT12345", ticker, wm, wifiClientFirmware);
+  AAS.initMqtt(mqttClient, wm);
+  mqttClient.setCallback(callback);
 
   mechanics.updateCoinDisplay(coinAcceptor.getCount(), true);
   attachInterrupt(digitalPinToInterrupt(coinAcceptor.getPinCoin()), coinInserted, RISING);
@@ -130,7 +115,7 @@ void setup()
   esp_task_wdt_add(NULL); // Add the current task to the watchdog timer
 
   // Create FreeRTOS task for WiFi Manager and PubSubClient
-//   xTaskCreatePinnedToCore(WiFiTask, "WiFiTask", 4096, NULL, 1, NULL, 1);
+   xTaskCreatePinnedToCore(WiFiTask, "WiFiTask", 4096, NULL, 1, NULL, 1);
 }
 
 void printOngoing() {
@@ -150,5 +135,6 @@ void loop()
   mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
   vm_detergent.handleAllButtonPresses(coinAcceptor.count);
   vm_softener.handleAllButtonPresses(coinAcceptor.count);
-  coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
+  int resetCount = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
+  AAS.keepAlive(wm, mqttClient, wifiClient);
 }
