@@ -32,31 +32,39 @@ int VendingMachine::handleButtonPress(volatile bool &buttonPressed, int pinInput
         lastPressTime = &lastButtonConfigurePressTime;
     } else {
         // Handle other buttons if necessary
-        return;
+        return 0;
     }
 
     if (buttonPressed) {
         if (currentTime - *lastPressTime > debounceDelay * 4) {
             Serial.println("Button pressed");
             if (pinInput == pinButton) {
+                int tempCount = coinCount;
                 checkAndTriggerOperation(coinCount);
+                return tempCount;
             }
             buttonPressed = false;
             *lastPressTime = currentTime; // Update the last button press time
+            return 0;
         }
+        return 0;
     }
+    else 
+        return 0;
 }
 
 int VendingMachine::handleAllButtonPresses(volatile int &coinCount) 
 {
     setLedState(coinCount);
     if (buttonPressed) {
-        handleButtonPress(buttonPressed, pinButton, pinLed, coinCount);
+        return handleButtonPress(buttonPressed, pinButton, pinLed, coinCount);
     }
 
     if (buttonConfigurePressed) {
-        handleButtonPress(buttonConfigurePressed, pinButtonConfigure, pinLed, coinCount);
+        return handleButtonPress(buttonConfigurePressed, pinButtonConfigure, pinLed, coinCount);
     }
+
+    return 0;
 }
 
 void VendingMachine::checkAndTriggerOperation(volatile int &coinCount) {

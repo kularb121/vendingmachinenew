@@ -45,7 +45,7 @@ void AllArounds::initMqtt(PubSubClient &mqttClient, WiFiManager &wm)
   this->mqtt_password = "2IL$rH74Odz0";
   this->sendTopic = customer + "/mcu/" + devName;
   this->receiveTopic = customer + "/app/" + devName;
-  this->toServer = "SCGMMonitor";  
+  this->toServer = "AASMonitor";  
   this->updateMqttPeriod = 2;
   this->pingMqttPeriod = 5;
   mqttClient.setServer(mqtt_server.c_str(), 1883);

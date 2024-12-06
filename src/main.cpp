@@ -133,8 +133,24 @@ void loop()
   printOngoing();
   // Check button and blink LED if pressed.
   mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
-  vm_detergent.handleAllButtonPresses(coinAcceptor.count);
-  vm_softener.handleAllButtonPresses(coinAcceptor.count);
-  int resetCount = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
+  int detergentCoins = vm_detergent.handleAllButtonPresses(coinAcceptor.count);
+  int softenerCoins = vm_softener.handleAllButtonPresses(coinAcceptor.count);
+//   vm_detergent.handleAllButtonPresses(coinAcceptor.count);
+//   vm_softener.handleAllButtonPresses(coinAcceptor.count);
+  int resetCoins = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
   AAS.keepAlive(wm, mqttClient, wifiClient);
+  if(detergentCoins > 0)
+  {
+    AAS.publishMQTT(mqttClient, "coins", "detergent", String(detergentCoins));
+  }
+
+  if(softenerCoins > 0)
+  {
+    AAS.publishMQTT(mqttClient, "coins", "softener", String(softenerCoins));
+  }
+
+  if(resetCoins > 0)
+  {
+    AAS.publishMQTT(mqttClient, "coins", "reset", String(resetCoins));
+  }
 }
