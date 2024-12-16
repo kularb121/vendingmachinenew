@@ -9,7 +9,7 @@ private:
     int pinCoin;
 
     unsigned long lastInterruptTime;
-    const unsigned long debounceDelay = 60;
+    const unsigned long debounceDelay = 20;
     bool state;
     int coinDiscard = 2; // New variable to hold the number of coins to discard
     int regCount; // New variable to hold the EEPROM address for count

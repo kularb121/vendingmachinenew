@@ -11,29 +11,6 @@ void Mechanics::init() {
     pinMode(pinRouter, OUTPUT);
 }
 
-// void Mechanics::updateCoinDisplay(int count, bool firstTime) {
-//     unsigned long currentMillis = millis();
-//     if (currentMillis - previousMillis >= interval) {
-//         previousMillis = currentMillis;
-//         lcd.clear();
-//         lcd.setCursor(0, 0);
-//         if (!firstTime) {
-//             if (count >= 0) {
-//                 lcd.print("Coins: ");
-//                 lcd.print(count);
-//             } else {
-//                 lcd.print("Coins: Invalid");
-//                 delay(5000);
-//                 ESP.restart();
-//             }
-//         } else {
-//             lcd.print("Welcome to");
-//             lcd.setCursor(0, 1);
-//             lcd.print("Wash Connect");
-//             delay(2000);
-//         }
-//     }
-// }
 
 void Mechanics::updateCoinDisplay(int count, bool firstTime) {
     unsigned long currentMillis = millis();

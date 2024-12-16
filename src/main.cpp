@@ -35,6 +35,9 @@ CoinAcceptor coinAcceptor(35, 20, 221); // Initialize CoinAcceptor with pin 25
 VendingMachine vm_detergent(25, 33, 36, 12); //(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin)
 VendingMachine vm_softener(32, 39, 34, 13);
 
+volatile bool coinInsertedFlag = false;
+unsigned long coinInsertedTimestamp = 0;
+
 void tick()             {  digitalWrite(AAS.pinReset, !digitalRead(AAS.pinReset)); }
 void ISRresetRunTime()  {  AAS.resetRunTime();   }
 
@@ -49,6 +52,8 @@ void attachTicker ()
 void IRAM_ATTR coinInserted() {
     // Serial.println("Coin inserted");
     coinAcceptor.incrementCount();
+    coinInsertedFlag = true;
+    coinInsertedTimestamp = millis();
 }
 
 // void IRAM_ATTR detergentButtonISR() {
@@ -105,10 +110,6 @@ void setup()
 
   mechanics.updateCoinDisplay(coinAcceptor.getCount(), true);
   attachInterrupt(digitalPinToInterrupt(coinAcceptor.getPinCoin()), coinInserted, RISING);
-//   attachInterrupt(digitalPinToInterrupt(vm_detergent.getPinButton()), detergentButtonISR, RISING);
-//   attachInterrupt(digitalPinToInterrupt(vm_softener.getPinButton()), softenerButtonISR, RISING);
-//   attachInterrupt(digitalPinToInterrupt(vm_detergent.getPinButtonConfigure()), detergentButtonConfigureISR, RISING);
-//   attachInterrupt(digitalPinToInterrupt(vm_softener.getPinButtonConfigure()), softenerButtonConfigureISR, RISING);
 
   // Initialize the watchdog timer
   esp_task_wdt_init(10, true); // Set timeout to 10 seconds
@@ -118,23 +119,34 @@ void setup()
    xTaskCreatePinnedToCore(WiFiTask, "WiFiTask", 4096, NULL, 1, NULL, 1);
 }
 
-void printOngoing() {
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillisOngoing >= intervalOngoing) {
-        previousMillisOngoing = currentMillis;
-        Serial.println("Ongoing");
-    }
-}
-
 void loop() 
 {
   // Reset the watchdog timer
   esp_task_wdt_reset();
-  printOngoing();
-  // Check button and blink LED if pressed.
+
+  // old version
   mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
+  coinInsertedFlag = false; // Reset the flag
   int detergentCoins = vm_detergent.handleAllButtonPresses(coinAcceptor.count);
   int softenerCoins = vm_softener.handleAllButtonPresses(coinAcceptor.count);
   int resetCoins = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
-  AAS.keepAliveReport(wm, mqttClient, wifiClient, detergentCoins, softenerCoins, resetCoins);  
+  AAS.keepAliveReport(wm, mqttClient, wifiClient, detergentCoins, softenerCoins, resetCoins);
+
+
+  // New version
+  // Handle coin insertion
+//   if (coinInsertedFlag) {
+//     if (millis() - coinInsertedTimestamp >= 2400) {
+//       coinAcceptor.setCount(coinAcceptor.getCount() / 4);
+//       mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
+//       coinInsertedFlag = false; // Reset the flag
+//       int detergentCoins = vm_detergent.handleAllButtonPresses(coinAcceptor.count);
+//       int softenerCoins = vm_softener.handleAllButtonPresses(coinAcceptor.count);
+//       int resetCoins = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
+//       AAS.keepAliveReport(wm, mqttClient, wifiClient, detergentCoins, softenerCoins, resetCoins);
+//     }
+//   } else {
+//     mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
+//     AAS.keepAlive(wm, mqttClient, wifiClient);
+//   }
 }
