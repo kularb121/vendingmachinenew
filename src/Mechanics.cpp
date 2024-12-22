@@ -12,9 +12,9 @@ void Mechanics::init() {
 }
 
 
-void Mechanics::updateCoinDisplay(int count, bool firstTime) {
+void Mechanics::updateCoinDisplay(int count, bool firstTime, bool displayNow) {
     unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= interval) {
+    if ((currentMillis - previousMillis >= interval) || displayNow) {
         previousMillis = currentMillis;
         if (firstTime || count != lastDisplayedCount) {
             lcd.clear();

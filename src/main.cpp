@@ -25,18 +25,11 @@ PubSubClient mqttClient(wifiClient);
 const char* ssid = "AewAew_2.4G";
 const char* password = "meowmeow";
 
-unsigned long previousMillisOngoing = 0;
-const long intervalOngoing = 10000; // 10 seconds
-
-
 // Initialize VendingMachine with pin numbers
 Mechanics mechanics(0x27, 16, 2); // Set the LCD address to 0x27 for a 16 chars and 2 line display
 CoinAcceptor coinAcceptor(35, 20); // Initialize CoinAcceptor with pin 25
 VendingMachine vm_detergent(25, 33, 36, 12); //(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin)
 VendingMachine vm_softener(32, 39, 34, 13);
-
-volatile bool coinInsertedFlag = false;
-unsigned long coinInsertedTimestamp = 0;
 
 void tick()             {  digitalWrite(AAS.pinReset, !digitalRead(AAS.pinReset)); }
 void ISRresetRunTime()  {  AAS.resetRunTime();   }
@@ -49,11 +42,24 @@ void attachTicker ()
   runTimeTick.attach(60*60, ISRresetRunTime);
 }
 
+// void IRAM_ATTR coinInserted() 
+// {
+//   coinAcceptor.incrementCount();
+// }
+
+// Debouncing variables
+unsigned long lastPulseTime = 0;
+volatile int pulseCount = 0;
+const unsigned long debounceDelay = 40; // 40 milliseconds
 void IRAM_ATTR coinInserted() {
-    // Serial.println("Coin inserted");
-    coinAcceptor.incrementCount();
-    coinInsertedFlag = true;
-    coinInsertedTimestamp = millis();
+  unsigned long currentTime = millis();
+
+  if (currentTime - lastPulseTime > debounceDelay) {
+    coinAcceptor.coinInsertedFlag = true;
+    pulseCount++;
+    coinAcceptor.lastCoinTime = currentTime;
+    lastPulseTime = currentTime;
+  }
 }
 
 void WiFiTask(void *pvParameters) {
@@ -95,7 +101,7 @@ void setup()
   // It reads the stored coin count value from EEPROM and initializes the coin count variable.
   // It ensures that the coin count is persistent across device restarts by loading the previously saved count.
   coinAcceptor.initCount();
-  mechanics.updateCoinDisplay(coinAcceptor.getCount(), true);
+  mechanics.updateCoinDisplay(coinAcceptor.getCount(), true, false);
   attachInterrupt(digitalPinToInterrupt(coinAcceptor.getPinCoin()), coinInserted, RISING);
 
   // Initialize the watchdog timer
@@ -113,8 +119,8 @@ void loop()
   esp_task_wdt_reset();
 
   // old version
-  mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
-  coinInsertedFlag = false; // Reset the flag
+  //mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
+  coinAcceptor.handleCoinInsertion(mechanics, pulseCount);
   int detergentCoins = vm_detergent.handleAllButtonPresses(coinAcceptor.count);
   int softenerCoins = vm_softener.handleAllButtonPresses(coinAcceptor.count);
   int resetCoins = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed

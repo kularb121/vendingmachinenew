@@ -3,24 +3,26 @@
 
 #include <Arduino.h>
 #include <EEPROM.h>
+#include "Mechanics.h"
 
 class CoinAcceptor {
 private:
     int pinCoin;
-
     unsigned long lastInterruptTime;
     const unsigned long debounceDelay = 20;
     bool state;
     int coinDiscard = 2; // New variable to hold the number of coins to discard
-    unsigned long lastCoinTime; // Timestamp of the last coin insertion
-    
+   
     // EEPROM registers
     // register blocks 201 - 220 are reserved for CoinAcceptor
     int regCoinCount = 201; // New variable to hold the EEPROM address for count
 
 public:
+    volatile bool coinInsertedFlag = false;
+    unsigned long lastCoinTime; // Timestamp of the last coin insertion
     // Constructor
     volatile int count;
+    volatile unsigned long lastCoinInsertedTime = 0;
     CoinAcceptor(int coinPin, unsigned long debounceDelay = 20) 
         : pinCoin(coinPin), count(0), lastInterruptTime(0), debounceDelay(debounceDelay), state(false) {
         pinMode(pinCoin, INPUT);
@@ -73,17 +75,7 @@ public:
         EEPROM.write(regCoinCount, 0); // Write the count value to EEPROM
     }
 
-    // Method to manually increment the count (e.g., called from loop)
-    void incrementCount() {
-       
-        unsigned long currentTime = millis();
-        if (currentTime - lastInterruptTime > debounceDelay) {
-            count++;
-            lastInterruptTime = currentTime;
-
-        }
-    }
-        // Method to check and reset the count if more than five minutes have passed
+    // Method to check and reset the count if more than five minutes have passed
     int checkAndResetCount() {
 
         unsigned long currentTime = millis();
@@ -97,6 +89,42 @@ public:
             return 0;
         }
     }
-};
+    // Method to count coins
+    void countCoins(volatile int &pulseCount) 
+    {
+        // Adjust count (divide by 2 if >= 2, otherwise reset)
+        int coin10 = 10;
+        int coin5 = 5;
+        int leadCoin = 2;
 
+        if (count >= leadCoin) {
+            Serial.println("countCoins is called.");
+            if (pulseCount >= coin10) {
+                count = count + round(pulseCount / (coin10 + leadCoin)) * coin10;
+            } 
+            else if (pulseCount >= coin5) {
+                count = count + round(pulseCount / (coin5 + leadCoin)) * coin5;
+            } 
+            Serial.println("count is " + String(count));           
+        }
+        
+    }
+    // Method to handle coin insertion
+    void handleCoinInsertion(Mechanics &mechanics, volatile int &pulseCount) 
+    {
+        if (coinInsertedFlag) {
+            unsigned long currentTime = millis();
+            if (currentTime - lastCoinTime >= 750) {
+                Serial.println("Coin to calculate is "+ String(pulseCount));
+                countCoins(pulseCount);
+                mechanics.updateCoinDisplay(getCount(), false, true);
+                lastCoinTime = currentTime;
+                coinInsertedFlag = false;
+                pulseCount = 0;
+            }
+        }
+        else 
+            mechanics.updateCoinDisplay(getCount(), false, true);
+    }
+};
 #endif // COINACCEPTOR_H

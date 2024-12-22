@@ -8,7 +8,7 @@ class Mechanics {
 public:
     Mechanics(uint8_t lcdAddr, uint8_t lcdCols, uint8_t lcdRows);
     void init();
-    void updateCoinDisplay(int count, bool firstTime);
+    void updateCoinDisplay(int count, bool firstTime, bool displayNow);
     void updateDisplay(int col1, int row1, String message1, int col2, int row2, String message2,
                        int col3, int row3, String message3, int col4, int row4, String message4, int displayTime);
 
