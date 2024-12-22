@@ -97,14 +97,15 @@ public:
         int coin5 = 5;
         int leadCoin = 2;
 
-        if (count >= leadCoin) {
+        if (pulseCount >= leadCoin) {
             Serial.println("countCoins is called.");
             if (pulseCount >= coin10) {
                 count = count + round(pulseCount / (coin10 + leadCoin)) * coin10;
             } 
             else if (pulseCount >= coin5) {
                 count = count + round(pulseCount / (coin5 + leadCoin)) * coin5;
-            } 
+            }
+            setCount(count);
             Serial.println("count is " + String(count));           
         }
         
@@ -122,9 +123,16 @@ public:
                 coinInsertedFlag = false;
                 pulseCount = 0;
             }
+            else
+            {
+                if(pulseCount > 3)
+                    mechanics.updateCoinDisplay(getCount() + pulseCount - 3, false, true);                
+            }
+
+                
         }
         else 
-            mechanics.updateCoinDisplay(getCount(), false, true);
+            mechanics.updateCoinDisplay(getCount(), false, false);
     }
 };
 #endif // COINACCEPTOR_H

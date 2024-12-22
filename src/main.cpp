@@ -42,11 +42,6 @@ void attachTicker ()
   runTimeTick.attach(60*60, ISRresetRunTime);
 }
 
-// void IRAM_ATTR coinInserted() 
-// {
-//   coinAcceptor.incrementCount();
-// }
-
 // Debouncing variables
 unsigned long lastPulseTime = 0;
 volatile int pulseCount = 0;
@@ -64,7 +59,7 @@ void IRAM_ATTR coinInserted() {
 
 void WiFiTask(void *pvParameters) {
     int retryCount = 0;
-    const int maxRetries = 5;
+    const int maxRetries = 10;
 
     while (true) {
         if (WiFi.status() != WL_CONNECTED) {
@@ -105,7 +100,7 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(coinAcceptor.getPinCoin()), coinInserted, RISING);
 
   // Initialize the watchdog timer
-  esp_task_wdt_init(10, true); // Set timeout to 10 seconds
+  esp_task_wdt_init(30, true); // Set timeout to 10 seconds
   esp_task_wdt_add(NULL); // Add the current task to the watchdog timer
 
   // Create FreeRTOS task for WiFi Manager and PubSubClient

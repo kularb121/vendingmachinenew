@@ -1,4 +1,5 @@
 #include "AllArounds.h"
+#include <esp_task_wdt.h>
 
 AllArounds::AllArounds() {}
 
@@ -62,7 +63,7 @@ void AllArounds::initMqtt(PubSubClient &mqttClient, WiFiManager &wm)
 
 bool AllArounds::reconnectMqtt(PubSubClient &mqttClient, WiFiManager &wm) 
 {
-  int maxAttempts = 5;  
+  int maxAttempts = 10;  
   while (!mqttClient.connected()) 
   {
     for(int i = 1; i <= maxAttempts; i++)
@@ -70,7 +71,7 @@ bool AllArounds::reconnectMqtt(PubSubClient &mqttClient, WiFiManager &wm)
       reconnectWifi(wm);
       Serial.print("Attempting MQTT connection...");
       delay(10);
-    
+      esp_task_wdt_reset(); // Reset the watchdog timer
       if (mqttClient.connect(clientId.c_str(), mqtt_userName.c_str(), mqtt_password.c_str())) //
       {
         Serial.println("connected");
@@ -126,6 +127,7 @@ bool AllArounds::reconnectWifi(WiFiManager &wm)
     Serial.print(".");
     printToDebug("WiFi Disconnected, retry in 2 seconds");    
     delay(2000);
+    esp_task_wdt_reset(); // Reset the watchdog timer
     i++;
   }   
   if( i >= maxTries )
