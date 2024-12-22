@@ -31,7 +31,7 @@ const long intervalOngoing = 10000; // 10 seconds
 
 // Initialize VendingMachine with pin numbers
 Mechanics mechanics(0x27, 16, 2); // Set the LCD address to 0x27 for a 16 chars and 2 line display
-CoinAcceptor coinAcceptor(35, 20, 221); // Initialize CoinAcceptor with pin 25
+CoinAcceptor coinAcceptor(35, 20); // Initialize CoinAcceptor with pin 25
 VendingMachine vm_detergent(25, 33, 36, 12); //(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin)
 VendingMachine vm_softener(32, 39, 34, 13);
 
@@ -55,23 +55,6 @@ void IRAM_ATTR coinInserted() {
     coinInsertedFlag = true;
     coinInsertedTimestamp = millis();
 }
-
-// void IRAM_ATTR detergentButtonISR() {
-//     vm_detergent.setButtonPressed(true);
-// }
-
-// void IRAM_ATTR softenerButtonISR() {
-//     vm_softener.setButtonPressed(true);
-// }
-
-// void IRAM_ATTR detergentButtonConfigureISR() {
-//     vm_detergent.setButtonConfigurePressed(true);
-// }
-
-// void IRAM_ATTR softenerButtonConfigureISR() {
-//     vm_softener.setButtonConfigurePressed(true);
-// }
-
 
 void WiFiTask(void *pvParameters) {
     int retryCount = 0;
@@ -108,6 +91,10 @@ void setup()
   AAS.initMqtt(mqttClient, wm);
   mqttClient.setCallback(callback);
 
+  // Initialize the coin count from EEPROM.
+  // It reads the stored coin count value from EEPROM and initializes the coin count variable.
+  // It ensures that the coin count is persistent across device restarts by loading the previously saved count.
+  coinAcceptor.initCount();
   mechanics.updateCoinDisplay(coinAcceptor.getCount(), true);
   attachInterrupt(digitalPinToInterrupt(coinAcceptor.getPinCoin()), coinInserted, RISING);
 
@@ -117,6 +104,7 @@ void setup()
 
   // Create FreeRTOS task for WiFi Manager and PubSubClient
    xTaskCreatePinnedToCore(WiFiTask, "WiFiTask", 4096, NULL, 1, NULL, 1);
+
 }
 
 void loop() 
@@ -131,22 +119,4 @@ void loop()
   int softenerCoins = vm_softener.handleAllButtonPresses(coinAcceptor.count);
   int resetCoins = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
   AAS.keepAliveReport(wm, mqttClient, wifiClient, detergentCoins, softenerCoins, resetCoins);
-
-
-  // New version
-  // Handle coin insertion
-//   if (coinInsertedFlag) {
-//     if (millis() - coinInsertedTimestamp >= 2400) {
-//       coinAcceptor.setCount(coinAcceptor.getCount() / 4);
-//       mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
-//       coinInsertedFlag = false; // Reset the flag
-//       int detergentCoins = vm_detergent.handleAllButtonPresses(coinAcceptor.count);
-//       int softenerCoins = vm_softener.handleAllButtonPresses(coinAcceptor.count);
-//       int resetCoins = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
-//       AAS.keepAliveReport(wm, mqttClient, wifiClient, detergentCoins, softenerCoins, resetCoins);
-//     }
-//   } else {
-//     mechanics.updateCoinDisplay(coinAcceptor.getCount(), false);
-//     AAS.keepAlive(wm, mqttClient, wifiClient);
-//   }
 }

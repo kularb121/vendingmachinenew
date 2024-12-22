@@ -12,21 +12,25 @@ private:
     const unsigned long debounceDelay = 20;
     bool state;
     int coinDiscard = 2; // New variable to hold the number of coins to discard
-    int regCount; // New variable to hold the EEPROM address for count
     unsigned long lastCoinTime; // Timestamp of the last coin insertion
     
+    // EEPROM registers
+    // register blocks 201 - 220 are reserved for CoinAcceptor
+    int regCoinCount = 201; // New variable to hold the EEPROM address for count
+
 public:
     // Constructor
     volatile int count;
-    CoinAcceptor(int coinPin, unsigned long debounceDelay = 20, int regCount = 221) 
+    CoinAcceptor(int coinPin, unsigned long debounceDelay = 20) 
         : pinCoin(coinPin), count(0), lastInterruptTime(0), debounceDelay(debounceDelay), state(false) {
         pinMode(pinCoin, INPUT);
         EEPROM.begin(512); // Initialize EEPROM with size 512 bytes
-        if(EEPROM.read(regCount) == 255) { // Check if the EEPROM value is empty
-            EEPROM.write(regCount, 0); // Initialize the count value in EEPROM
+        if(EEPROM.read(regCoinCount) == 255) { // Check if the EEPROM value is empty
+            EEPROM.write(regCoinCount, 0); // Initialize the count value in EEPROM
             EEPROM.commit(); // Ensure the value is written to EEPROM
         }
-        count = EEPROM.read(regCount); // Read the count value from EEPROM
+        Serial.println("Coin now is " + String(count));
+        count = EEPROM.read(regCoinCount); // Read the count value from EEPROM
     }
 
     // Getter and Setter for pinCoin
@@ -39,6 +43,10 @@ public:
         pinMode(pinCoin, INPUT);
     }
 
+    void initCount() {
+        count = EEPROM.read(regCoinCount); // Read the count value from EEPROM
+    }
+
     // Getter and Setter for count
     int getCount() const {
         return count;
@@ -46,7 +54,7 @@ public:
 
     void setCount(int newCount) {
         count = newCount;
-        EEPROM.write(regCount, count); // Write the count value to EEPROM
+        EEPROM.write(regCoinCount, count); // Write the count value to EEPROM
         EEPROM.commit(); // Ensure the value is written to EEPROM
     }
 
@@ -62,6 +70,7 @@ public:
     // Reset count
     void resetCount() {
         setCount(0);
+        EEPROM.write(regCoinCount, 0); // Write the count value to EEPROM
     }
 
     // Method to manually increment the count (e.g., called from loop)
@@ -71,11 +80,9 @@ public:
         if (currentTime - lastInterruptTime > debounceDelay) {
             count++;
             lastInterruptTime = currentTime;
-        //     // EEPROM.write(regCount, count); // Write the count value to EEPROM
-        //     // EEPROM.commit(); // Ensure the value is written to EEPROM
+
         }
     }
-
         // Method to check and reset the count if more than five minutes have passed
     int checkAndResetCount() {
 
