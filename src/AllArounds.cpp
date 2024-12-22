@@ -490,137 +490,33 @@ void AllArounds::callbackMqtt(char* topic, byte* payload, unsigned int length, P
     Serial.println(error.f_str());
     return;
   }
-  String toMach = doc["to"];          
-  String fromDev = doc["from"];          
-  String message = doc["message"];    
+  String toMach = doc["to"];        
+  String fromDev = doc["from"];      
+  String message = doc["message"];   
   String machStatus = doc["status"];
   String machAmount = doc["amount"];
-  int result = 0;
 
-  //Manage other functional settings and checks. Retrieve result value and combine publish to save memory.
-  String result1 = "102";
-  String result2 = "103";
-
-  if (message == "getEEPROMvalue")
-  {
-    int currReg = machStatus.toInt();
-    if (currReg > 0 && currReg <= 500)
-    {
-      result1 = machStatus;
-      result2 = String(EEPROM.read(currReg));
-    }
-    else
-    {
-      result1 = machStatus;
-      result2 = "Out of range";
-    }
-  }  
-  else if (message == "getDeviceNumber")
-  {
-      result1 = getDevNumber();
-      result2 = "0";        
-  }
-  else if (message == "setEnableUpdate")
-  {
-    int getUpdate = machStatus.toInt();
-    if(getUpdate <= 1)
-    {
-      EEPROMWriteESP(regEnableUpdate, getUpdate);
-      enableUpdate = EEPROM.read(regEnableUpdate);
-      result1 = machStatus;
-    }
-    else
-      result1 = machStatus;
-    result2 = String(EEPROM.read(regEnableUpdate));                
-  }
-
-  else if (message.equals("fileName"))
-  {
-    result1 = fileName;
-    result2 = fileVersion;
-  }
-
-  else if (message == "changeDeviceNumber")
-  {
-    if(machAmount.equals(changePass))
-    {      
-      String changeDevResult = changeDeviceNumber(machStatus.toInt());
-      if(changeDevResult != "Out of Range")
-      { 
-        publishMQTT(mqttClient, message, machStatus, changeDevResult);    
-        delay(5000);
-        ESP.restart();
-      }
-      else
-        publishMQTT(mqttClient, message, machStatus, changeDevResult);
-    }      
-  }
-
-  else if (message == "scanWiFi")
-  {
-    int numberOfNetworks = WiFi.scanNetworks();
-    int channel[15];
-    for(int i = 0; i < 15; i++)
-      channel[i] = 0;
-    for(int i =0; i<numberOfNetworks; i++)
-    {
-      int channelThreshold = -70;
-      if(WiFi.RSSI(i) > channelThreshold)
-        channel[WiFi.channel(i)] += 1;
-    }
-
-    for(int i =1; i <= 11; i++)
-    {
-      publishMQTT(mqttClient, message, String(i), String(channel[i]));
-      delay(100);
-    }
-    publishMQTT(mqttClient, message, "currChannel", String(WiFi.channel()));
-    result1 = "102";
-    result2 = "103";
-  }
-  
-  else if (message == "setEEPROMvalue")
-  {
-    int currReg = machStatus.toInt();
-    if (currReg > 0 && currReg <= 500)
-    {
-      result1 = machStatus;
-      int setVal = machAmount.toInt();
-      if(setVal >=0 && setVal <= 255)
-      {
-        EEPROMWriteESP(currReg, setVal);
-        result1 = machStatus;      
-        result2 = String(EEPROM.read(currReg));
-      }
-      else
-      {
-        result1 = machStatus;
-        result2 = "999";
-      }
-    }
-    else
-    {
-      result1 = machStatus;
-      result2 = "Out of range";
-    }
-  }
-  else if (message == "resetDevice")
-  {
-    if(machAmount.equals(changePass))
-    {          
-      resetRelay(machStatus.toInt());
-    }      
-  }
-  else if (message == "getEnableUpdate")
-  {
-      result1 = String(EEPROM.read(regEnableUpdate));
-      result2 = "0";        
-  }
-
-  else
+  if (message == "getEEPROMvalue") {
+    handleGetEEPROMValue(machStatus, machAmount, mqttClient);
+  } else if (message == "getDeviceNumber") {
+    handleGetDeviceNumber(mqttClient);
+  } else if (message == "setEnableUpdate") { 
+    handleSetEnableUpdate(machStatus, mqttClient);
+  } else if (message.equals("fileName")) {
+    handleFileName(mqttClient);
+  } else if (message == "changeDeviceNumber") {
+    handleChangeDeviceNumber(machStatus, machAmount, mqttClient);
+  } else if (message == "scanWiFi") {
+    handleScanWiFi(mqttClient);
+  } else if (message == "setEEPROMvalue") {
+    handleSetEEPROMValue(machStatus, machAmount, mqttClient);
+  } else if (message == "resetDevice") {
+    handleResetDevice(machStatus, machAmount);
+  } else if (message == "getEnableUpdate") {
+    handleGetEnableUpdate(mqttClient);
+  } else {
     Serial.println("No correct message is found.");
-  if(!result1.equals("102") || !result2.equals("103"))
-    publishMQTT(mqttClient, message, result1, result2);          
+  } 
 }
 
 String AllArounds::changeDeviceNumber(int newDevNumber)
@@ -719,4 +615,105 @@ void AllArounds::resetMCUMemory(int resetMode)
         EEPROMWriteESP(i, 0);
       break;      
   }
+}
+
+void AllArounds::handleGetEEPROMValue(String machStatus, String machAmount, PubSubClient &mqttClient) {
+  int currReg = machStatus.toInt();
+  String result1, result2; 
+  if (currReg > 0 && currReg <= 500) {
+    result1 = machStatus;
+    result2 = String(EEPROM.read(currReg));
+  } else {
+    result1 = machStatus;
+    result2 = "Out of range";
+  }
+  publishMQTT(mqttClient, "getEEPROMvalue", result1, result2); 
+}
+
+void AllArounds::handleGetDeviceNumber(PubSubClient &mqttClient) {
+  String result1 = getDevNumber();
+  publishMQTT(mqttClient, "getDeviceNumber", result1, "0"); 
+}
+
+void AllArounds::handleSetEnableUpdate(String machStatus, PubSubClient &mqttClient) {
+  int getUpdate = machStatus.toInt();
+  String result1, result2;
+  if (getUpdate <= 1) {
+    EEPROMWriteESP(regEnableUpdate, getUpdate);
+    enableUpdate = EEPROM.read(regEnableUpdate);
+    result1 = machStatus;
+  } else {
+    result1 = machStatus; 
+  }
+  result2 = String(EEPROM.read(regEnableUpdate)); 
+  publishMQTT(mqttClient, "setEnableUpdate", result1, result2);
+}
+
+void AllArounds::handleFileName(PubSubClient &mqttClient) {
+  publishMQTT(mqttClient, "fileName", fileName, fileVersion);
+}
+
+void AllArounds::handleChangeDeviceNumber(String machStatus, String machAmount, PubSubClient &mqttClient) {
+  if (!machAmount.equals(changePass)) {
+    publishMQTT(mqttClient, "changeDeviceNumber", machStatus, "Incorrect Password");
+    return; 
+  }
+
+  String changeDevResult = changeDeviceNumber(machStatus.toInt());
+  publishMQTT(mqttClient, "changeDeviceNumber", machStatus, changeDevResult);
+
+  if (changeDevResult != "Out of Range") {
+    delay(5000); 
+    ESP.restart();
+  }
+}
+
+void AllArounds::handleScanWiFi(PubSubClient &mqttClient) {
+  int numberOfNetworks = WiFi.scanNetworks();
+  int channel[15] = {0}; // Initialize all elements to 0
+
+  for (int i = 0; i < numberOfNetworks; i++) {
+    int channelThreshold = -70;
+    if (WiFi.RSSI(i) > channelThreshold) {
+      channel[WiFi.channel(i)] += 1;
+    }
+  }
+
+  for (int i = 1; i <= 11; i++) {
+    publishMQTT(mqttClient, "scanWiFi", String(i), String(channel[i]));
+    delay(100); 
+  }
+  publishMQTT(mqttClient, "scanWiFi", "currChannel", String(WiFi.channel()));
+}
+
+void AllArounds::handleSetEEPROMValue(String machStatus, String machAmount, PubSubClient &mqttClient) {
+  int currReg = machStatus.toInt();
+  String result1, result2;
+  if (currReg > 0 && currReg <= 500) {
+    result1 = machStatus;
+    int setVal = machAmount.toInt();
+    if (setVal >= 0 && setVal <= 255) {
+      EEPROMWriteESP(currReg, setVal);
+      result1 = machStatus;      
+      result2 = String(EEPROM.read(currReg));
+    } else {
+      result1 = machStatus;
+      result2 = "999"; // Indicate invalid value
+    }
+  } else {
+    result1 = machStatus;
+    result2 = "Out of range";
+  }
+  publishMQTT(mqttClient, "setEEPROMvalue", result1, result2);
+}
+
+void AllArounds::handleResetDevice(String machStatus, String machAmount) {
+  if (machAmount.equals(changePass)) {    
+    resetRelay(machStatus.toInt());
+  }  
+}
+
+void AllArounds::handleGetEnableUpdate(PubSubClient &mqttClient) {
+  String result1 = String(EEPROM.read(regEnableUpdate));
+  publishMQTT(mqttClient, "getEnableUpdate", result1, "0");
 }

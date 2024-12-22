@@ -219,6 +219,19 @@ class AllArounds
       bool reconnectMqtt(PubSubClient &mqttClient, WiFiManager &wm);
       bool publishMQTT(PubSubClient &mqttClient, String message, String machStatus, String amount);    
       void callbackMqtt(char* topic, byte* payload, unsigned int length, PubSubClient &mqttClient);
+      
+      // --- Message Handler Functions ---
+      void handleGetEEPROMValue(String machStatus, String machAmount, PubSubClient &mqttClient);
+      void handleGetDeviceNumber(PubSubClient &mqttClient);
+      void handleSetEnableUpdate(String machStatus, PubSubClient &mqttClient);
+      void handleFileName(PubSubClient &mqttClient);
+      void handleChangeDeviceNumber(String machStatus, String machAmount, PubSubClient &mqttClient);
+      void handleScanWiFi(PubSubClient &mqttClient);
+      void handleSetEEPROMValue(String machStatus, String machAmount, PubSubClient &mqttClient);
+      void handleResetDevice(String machStatus, String machAmount);
+      void handleGetEnableUpdate(PubSubClient &mqttClient);
+
+      
       void resetupMqttClient(PubSubClient &mqttClient);
             
            
