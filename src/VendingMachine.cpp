@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 
-VendingMachine::VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin) {
+VendingMachine::VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin, int regPumpTime) {
     setPinLed(ledPin);
     setPinButton(buttonPin);
     setPinButtonConfigure(buttonConfigurePin);
@@ -13,10 +13,10 @@ VendingMachine::VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin
     startPrice = 5.0; // Initialize startPrice
 
     // Read timePerBaht from EEPROM
-    timePerBaht = EEPROM.read(timePerBahtAddress);
+    timePerBaht = EEPROM.read(regPumpTime);
     if (timePerBaht == 0 || timePerBaht == 255) {
         timePerBaht = 16; // Set default value, in 100ms
-        EEPROM.write(timePerBahtAddress, timePerBaht);
+        EEPROM.write(regPumpTime, timePerBaht);
         EEPROM.commit();
     }
 }

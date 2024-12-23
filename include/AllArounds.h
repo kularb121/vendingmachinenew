@@ -96,7 +96,13 @@ class AllArounds
 
       byte maxAdsFail = 30;
       byte regAds0 = 91;
-          
+        
+      //// EEPROM registers 310 - 330 are reserved for VendingMachine
+      int regPump1Time = 311; // EEPROM address for timePerBaht
+      int regPump2Time = 312; // EEPROM address for timePerBaht
+      int regPump3Time = 313; // EEPROM address for timePerBaht
+      int regPump4Time = 314; // EEPROM address for timePerBaht
+      
       int regSerial = 499;
       int regFirstSetup = 501;
       byte enableUpdate;
@@ -230,8 +236,8 @@ class AllArounds
       void handleSetEEPROMValue(String machStatus, String machAmount, PubSubClient &mqttClient);
       void handleResetDevice(String machStatus, String machAmount);
       void handleGetEnableUpdate(PubSubClient &mqttClient);
-
-      
+      void handleSetPumpTime(String machStatus, String machAmount, PubSubClient &mqttClient);
+      void handleGetPumpTime(String machStatus, String machAmount, PubSubClient &mqttClient);
       void resetupMqttClient(PubSubClient &mqttClient);
             
            

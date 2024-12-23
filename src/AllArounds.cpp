@@ -516,6 +516,10 @@ void AllArounds::callbackMqtt(char* topic, byte* payload, unsigned int length, P
     handleResetDevice(machStatus, machAmount);
   } else if (message == "getEnableUpdate") {
     handleGetEnableUpdate(mqttClient);
+  } else if (message == "setPumpTime") { 
+    handleSetPumpTime(machStatus, machAmount, mqttClient);
+  } else if (message == "getPumpTime") { 
+    handleGetPumpTime(machStatus, machAmount, mqttClient);
   } else {
     Serial.println("No correct message is found.");
   } 
@@ -718,4 +722,50 @@ void AllArounds::handleResetDevice(String machStatus, String machAmount) {
 void AllArounds::handleGetEnableUpdate(PubSubClient &mqttClient) {
   String result1 = String(EEPROM.read(regEnableUpdate));
   publishMQTT(mqttClient, "getEnableUpdate", result1, "0");
+}
+
+void AllArounds::handleSetPumpTime(String machStatus, String machAmount, PubSubClient &mqttClient) {
+  int regPumpTime = 0;
+  String result1, result2;
+  if(machStatus == "pump1")
+  {
+    regPumpTime = 311;
+  }
+  else if (machStatus == "pump2")
+  {
+    regPumpTime = 312;
+  }
+
+  if (regPumpTime > 0) 
+  {
+    result1 = machStatus;
+    int setVal = machAmount.toInt();
+    if (setVal >= 0 && setVal <= 255) {
+      EEPROMWriteESP(regPumpTime, setVal);
+      result1 = machStatus;      
+      result2 = String(EEPROM.read(regPumpTime));
+    } else {
+      result1 = machStatus;
+      result2 = "999"; // Indicate invalid value
+    }
+  } else {
+    result1 = machStatus;
+    result2 = "Out of range";
+  }
+
+  publishMQTT(mqttClient, "setPumpTime", result1, result2);
+}
+
+void AllArounds::handleGetPumpTime(String machStatus, String machAmount, PubSubClient &mqttClient) 
+{
+  if(machStatus == "pump1")
+  {
+    String result1 = String(EEPROM.read(regPump1Time));
+    publishMQTT(mqttClient, "getPumpTime", machStatus, result1);
+  }
+  else if (machStatus == "pump2")
+  {
+    String result1 = String(EEPROM.read(regPump2Time));
+    publishMQTT(mqttClient, "getPumpTime", machStatus, result1);
+  }
 }

@@ -28,8 +28,10 @@ const char* password = "meowmeow";
 // Initialize VendingMachine with pin numbers
 Mechanics mechanics(0x27, 16, 2); // Set the LCD address to 0x27 for a 16 chars and 2 line display
 CoinAcceptor coinAcceptor(35, 20); // Initialize CoinAcceptor with pin 25
-VendingMachine vm_detergent(25, 33, 36, 12); //(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin)
-VendingMachine vm_softener(32, 39, 34, 13);
+int regPump1Time = 311;
+int regPump2Time = 312;
+VendingMachine vm_detergent(25, 33, 36, 12, regPump1Time); //(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin)
+VendingMachine vm_softener(32, 39, 34, 13, regPump2Time);
 
 void tick()             {  digitalWrite(AAS.pinReset, !digitalRead(AAS.pinReset)); }
 void ISRresetRunTime()  {  AAS.resetRunTime();   }
@@ -90,6 +92,8 @@ void setup()
 
   AAS.init(3, 10, "AAS IoT Manager", "AASIoT", "AASIoT12345", ticker, wm, wifiClientFirmware);
   AAS.initMqtt(mqttClient, wm);
+  AAS.regPump1Time = regPump1Time;
+  AAS.regPump2Time = regPump2Time;
   mqttClient.setCallback(callback);
 
   // Initialize the coin count from EEPROM.

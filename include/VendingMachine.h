@@ -6,10 +6,11 @@
 
 class VendingMachine {
 public:
-    VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin);
+    VendingMachine(int ledPin, int buttonPin, int buttonConfigurePin, int pumpPin, int regPumpTime);
     
     void checkButtonAndBlink(int pinInput, int pinOutput);
     int handleButtonPress(int pinInput, int pinOutput, volatile int &coinCount);
+    int handleButtonConfigurePress();
     int handleAllButtonPresses(volatile int &coinCount);
     void checkAndTriggerOperation(volatile int &coinCount);
     void setLedState(volatile int &coinCount);
@@ -38,6 +39,7 @@ private:
     int pinLed;
     int pinButton;
     int pinButtonConfigure;
+    bool blinkState = false;
     int pinPump;
     volatile bool buttonPressed;
     volatile bool buttonConfigurePressed;
@@ -46,7 +48,9 @@ private:
     volatile unsigned long lastButtonConfigurePressTime = 0;
     float startPrice; // New variable to hold the start price
     unsigned long timePerBaht;
-    const int timePerBahtAddress = 311; // EEPROM address for timePerBaht
+
+    // EEPROM registers 310 - 330 are reserved for VendingMachine
+    int regPumpTime; // EEPROM address for timePerBaht
 
 
 
