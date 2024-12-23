@@ -39,7 +39,68 @@ int VendingMachine::handleButtonPress(int pinInput, int pinOutput, volatile int 
             }
         }
     }
+    
+
     return 0;
+}
+
+int VendingMachine::handleButtonConfigurePress()
+{
+    if(blinkState == false)
+    {
+        if (digitalRead(pinButtonConfigure) == HIGH) {
+            delay(100);
+            if (digitalRead(pinButtonConfigure) == HIGH) {
+                delay(100);
+                if(digitalRead(pinButtonConfigure) == HIGH) {
+                    Serial.println("pinButtonConfigure pressed");
+                    long currentTime = millis();
+                    if(digitalRead(pinButtonConfigure) == HIGH)
+                        blinkState = true;
+                }
+            }
+        }
+    }
+
+    else
+    {
+        currentBlinkMillis = millis();
+        if(currentBlinkMillis - previousBlinkMillis >= 200)
+        {
+            previousBlinkMillis = currentBlinkMillis;
+            digitalWrite(pinLed, !digitalRead(pinLed));
+        }
+        if (digitalRead(pinButtonConfigure) == HIGH) {
+            delay(100);
+            if (digitalRead(pinButtonConfigure) == HIGH) {
+                delay(100);
+                if(digitalRead(pinButtonConfigure) == HIGH) 
+                {
+                    long press_StartTime = millis();
+                    long press_StopTime;
+                    while (digitalRead(pinButtonConfigure) == HIGH) {
+                        if (millis() - press_StartTime > 15000) {
+                            break;
+                        }
+                    }
+                    press_StopTime = millis();
+                    int press_Duration = (press_StopTime - press_StartTime) / 100;
+                    Serial.println("Press duration: " + String(press_Duration));
+                    blinkState = false;
+                    digitalWrite(pinLed, LOW);
+
+    //                     unsigned long timePerBaht;
+
+    // // EEPROM registers 310 - 330 are reserved for VendingMachine
+    // int regPumpTime; // EEPROM address for timePerBaht
+                    return 3;
+                }
+            }
+
+    }
+
+        return 0;
+    }
 }
 
 int VendingMachine::handleAllButtonPresses(volatile int &coinCount) 

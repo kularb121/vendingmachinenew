@@ -3,6 +3,7 @@
 
 #include "Mechanics.h"
 #include <EEPROM.h>
+#include <esp_task_wdt.h>
 
 class VendingMachine {
 public:
@@ -40,6 +41,9 @@ private:
     int pinButton;
     int pinButtonConfigure;
     bool blinkState = false;
+    unsigned long previousBlinkMillis = 0;
+    unsigned long currentBlinkMillis = 0;    
+    bool configureState = false;
     int pinPump;
     volatile bool buttonPressed;
     volatile bool buttonConfigurePressed;

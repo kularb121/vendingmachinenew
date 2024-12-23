@@ -54,7 +54,7 @@ void IRAM_ATTR coinInserted() {
   if (currentTime - lastPulseTime > debounceDelay) {
     coinAcceptor.coinInsertedFlag = true;
     pulseCount++;
-    coinAcceptor.lastCoinTime = currentTime;
+    //coinAcceptor.lastCoinTime = currentTime;
     lastPulseTime = currentTime;
   }
 }
@@ -122,6 +122,11 @@ void loop()
   coinAcceptor.handleCoinInsertion(mechanics, pulseCount);
   int detergentCoins = vm_detergent.handleAllButtonPresses(coinAcceptor.count);
   int softenerCoins = vm_softener.handleAllButtonPresses(coinAcceptor.count);
+  if(coinAcceptor.coinInsertedFlag == false && coinAcceptor.count == 0)
+  {
+    vm_detergent.handleButtonConfigurePress();
+    vm_softener.handleButtonConfigurePress();
+  }
   int resetCoins = coinAcceptor.checkAndResetCount(); // Check and reset the coin count if more than five minutes have passed
   AAS.keepAliveReport(wm, mqttClient, wifiClient, detergentCoins, softenerCoins, resetCoins);
 }

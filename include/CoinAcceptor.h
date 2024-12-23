@@ -118,8 +118,9 @@ public:
             if (currentTime - lastCoinTime >= 750) {
                 Serial.println("Coin to calculate is "+ String(pulseCount));
                 countCoins(pulseCount);
+                if(pulseCount > 2)
+                    lastCoinTime = currentTime;
                 mechanics.updateCoinDisplay(getCount(), false, true);
-                lastCoinTime = currentTime;
                 coinInsertedFlag = false;
                 pulseCount = 0;
             }
